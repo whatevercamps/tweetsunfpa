@@ -222,6 +222,7 @@ var AppSettings = /** @class */ (function () {
     function AppSettings() {
     }
     AppSettings.API_ENDPOINT = 'http://35.183.119.35:8000/';
+    AppSettings.JSONS = 'https://raw.githubusercontent.com/whatevercamps/graph_jsons_tw_unfpa/master/';
     return AppSettings;
 }());
 
@@ -283,7 +284,6 @@ var NavbarComponent = /** @class */ (function () {
             word_arr.push(this.p_word);
             var p_word2 = this.p_word.replace(new RegExp('\\s\\s*', 'gi'), ',');
             word_arr.push(p_word2);
-            console.log(word_arr);
             if (p_word2 != ',') {
                 var already = false;
                 this.words.forEach(function (element) {
@@ -325,7 +325,6 @@ var NavbarComponent = /** @class */ (function () {
                 this.mainService.set_words(this.words);
                 var req = this.words.join('|');
                 this.mainService.load_tweets(req, this.counter).subscribe(function (data) {
-                    console.log(data);
                     _this.mainService.set_tweets(data);
                     _this.mainService.set_start_page();
                 }, function (err) {
@@ -405,7 +404,6 @@ var MainService = /** @class */ (function () {
         this.words = words;
     };
     MainService.prototype.load_tweets = function (req, count) {
-        console.log(req);
         return this.http.get(_app_settings__WEBPACK_IMPORTED_MODULE_5__["AppSettings"].API_ENDPOINT + "tweets?keywords=" + req + '&count=' + count, httpOptions).pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_4__["timeout"])(180000));
     };
     MainService.prototype.get_tweets = function () {
@@ -450,7 +448,7 @@ module.exports = ".container{\n    padding : 0\n}\n/*# sourceMappingURL=data:app
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = "<div id=\"graph_nodes\" class=\"container\" style=\"margin: 0; max-width: 100% !important;\" (click)=\"click()\" #graph_nodes>\n  <canvas id=\"network\" [attr.width]=\"width\" [attr.height]=\"height\"></canvas>\n</div>\n"
+module.exports = "<div id=\"graph_nodes\" class=\"container\" style=\"margin: 0; max-width: 100% !important;\" #graph_nodes>\n  <canvas id=\"network\" [attr.width]=\"width\" [attr.height]=\"height\"></canvas>\n</div>\n"
 
 /***/ }),
 
@@ -467,30 +465,35 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
+/* harmony import */ var _services_main_service__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../services/main.service */ "./src/app/services/main.service.ts");
+
 
 
 
 var StaticsComponent = /** @class */ (function () {
-    function StaticsComponent() {
+    function StaticsComponent(mainService) {
+        this.mainService = mainService;
+        this.backup = 'graph';
     }
     StaticsComponent.prototype.ngOnInit = function () {
         var _this = this;
         this.height = window.innerHeight;
-        this.width = this.graph_container.nativeElement.offsetWidth;
-        index(this.width, this.height);
+        this.width = this.graph_container.nativeElement.offsetWidth + 1;
         var secondsCounter2 = Object(rxjs__WEBPACK_IMPORTED_MODULE_2__["interval"])(100);
         secondsCounter2.subscribe(function (n) {
-            var p_w = _this.graph_container.nativeElement.offsetWidth;
-            if (_this.width != p_w) {
-                _this.width = p_w;
-                index(_this.width, _this.height);
-            }
+            _this.mainService.get_words().subscribe(function (data) {
+                var p_w = _this.graph_container.nativeElement.offsetWidth;
+                if (_this.width != p_w || _this.backup != (data[0] || 'graph')) {
+                    console.log('entro al if');
+                    _this.backup = data[0] || 'graph';
+                    _this.width = p_w;
+                    index(_this.width, _this.height, data[0] || 'graph');
+                }
+            }, function (err) {
+                console.log('error en statics 33');
+                throw err;
+            });
         });
-    };
-    StaticsComponent.prototype.click = function () {
-        console.log(this.height);
-        console.log(this.width);
-        index(this.width, this.height);
     };
     tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ViewChild"])('graph_nodes'),
@@ -502,7 +505,7 @@ var StaticsComponent = /** @class */ (function () {
             template: __webpack_require__(/*! ./statics.component.html */ "./src/app/statics/statics.component.html"),
             styles: [__webpack_require__(/*! ./statics.component.css */ "./src/app/statics/statics.component.css")]
         }),
-        tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:paramtypes", [])
+        tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:paramtypes", [_services_main_service__WEBPACK_IMPORTED_MODULE_3__["MainService"]])
     ], StaticsComponent);
     return StaticsComponent;
 }());
@@ -557,7 +560,6 @@ var TweetComponent = /** @class */ (function () {
         this.hashtag = "#";
     }
     TweetComponent.prototype.ngOnInit = function () {
-        console.log('entró');
     };
     TweetComponent.prototype.highlight = function (text) {
         return text.replace(new RegExp("(@|#)(\\w*\\w*)", "gi"), function (match) {

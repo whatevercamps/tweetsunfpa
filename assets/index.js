@@ -1,4 +1,5 @@
-function index(p_width, p_height) {
+const JSONS = 'https://raw.githubusercontent.com/whatevercamps/graph_jsons_tw_unfpa/master/';
+function index(p_width, p_height, graph) {
 	var focus_node = null, highlight_node = null;
 	var highlight_color = "blue";
 	var highlight_trans = 0.1;
@@ -45,6 +46,10 @@ function index(p_width, p_height) {
 				return "#33CA7F"
 			} else if (group == "menstrual cramps") {
 				return "#DDD92A"
+			} else if (group == "cum") {
+				return "#BED558"
+			} else if (group == "condom") {
+				return "#A1E44D"
 			} else {
 				return "#aaa"
 			}
@@ -61,9 +66,7 @@ function index(p_width, p_height) {
 
 	var transform = d3.zoomIdentity;
 
-	d3.json("https://raw.githubusercontent.com/whatevercamps/twitter_graph_unfpa.github.io/master/graph.json").then(function (graph, err) {
-		if (err) throw err;
-
+	d3.json(JSONS + (graph || 'graph') + '.json').then(graph => {
 		simulation.nodes(graph.nodes);
 		simulation.force("link").links(graph.links);
 		simulation.on("tick", update);
@@ -122,6 +125,71 @@ function index(p_width, p_height) {
 				}
 			}
 		}
+
+	}, err => {
+		d3.json(JSONS + 'graph' + '.json').then(general_graph => {
+			simulation.nodes(general_graph.nodes);
+			simulation.force("link").links(general_graph.links);
+			simulation.on("tick", update);
+
+			canvas
+				.call(d3.drag()
+					.container(canvas.node())
+					.subject(dragsubject).on("start", dragstarted).on("drag", dragged).on("end", dragended))
+				.call(d3.zoom().scaleExtent([1 / 10, 8]).on("zoom", zoomed));
+
+
+
+			function zoomed() {
+				transform = d3.event.transform;
+				update();
+			}
+
+			function update() {
+
+				ctx.save();
+
+				ctx.clearRect(0, 0, width, height);
+				ctx.translate(transform.x, transform.y);
+				ctx.scale(transform.k, transform.k);
+
+				ctx.beginPath();
+
+				ctx.globalAlpha = 0.3;
+				ctx.strokeStyle = "#aaa";
+				general_graph.links.forEach(drawLink);
+				ctx.stroke();
+
+				ctx.globalAlpha = 1.0;
+				general_graph.nodes.forEach(drawNode);
+
+				ctx.restore();
+			}
+
+			function dragsubject() {
+				var i,
+					x = transform.invertX(d3.event.x),
+					y = transform.invertY(d3.event.y),
+					dx,
+					dy;
+				for (i = general_graph.nodes.length - 1; i >= 0; --i) {
+					node = general_graph.nodes[i];
+					dx = x - node.x;
+					dy = y - node.y;
+
+					if (dx * dx + dy * dy < r * r) {
+
+						node.x = transform.applyX(node.x);
+						node.y = transform.applyY(node.y);
+
+						return node;
+					}
+				}
+			}
+
+		}, error => {
+			throw error;
+		});
 	});
 
 	function dragstarted() {
